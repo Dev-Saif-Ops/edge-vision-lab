@@ -54,8 +54,11 @@ def test_mutation_tool_skips_docstrings_and_scores_as_claimed() -> None:
     assert (weak, strong) == (0, len(m.MUTANTS))
 
 
-def test_block_list_leaks_7_of_12_and_allow_list_none() -> None:
+def test_three_redactors_leak_12_5_and_0_of_17() -> None:
     m = load("06-url-redaction/redaction.py")
-    assert len(m.URLS) == 12
-    assert sum("SECRET" in m.block_list(u) for u in m.URLS) == 7
-    assert sum("SECRET" in m.allow_list(u) for u in m.URLS) == 0
+    assert len(m.URLS) == 17
+    assert len(m.leaks(m.block_list)) == 12
+    assert len(m.leaks(m.path_keeping_allow_list)) == 5
+    assert m.leaks(m.shortest_allow_list) == []
+    # the path-keeping version's leaks are exactly the five "harmless-looking path" URLs
+    assert m.leaks(m.path_keeping_allow_list) == [u for u, _, _ in m.URLS[12:]]

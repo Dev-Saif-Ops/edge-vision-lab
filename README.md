@@ -14,7 +14,7 @@ lesson I learned the hard way, turned into a script you can run in a few seconds
 | 03 | [Backoff and jitter](03-backoff-jitter/) | Without jitter, 200 devices hit a recovering server in the same instant |
 | 04 | [Test doubles](04-test-doubles/) | A fake said parallel; real OpenCV opens streams one at a time |
 | 05 | [Mutation testing](05-mutation-testing/) | Two test files, both 100% coverage: one caught 0/6 bugs, the other 6/6 |
-| 06 | [URL redaction](06-url-redaction/) | A block-list leaked 7/12 secrets; an allow-list leaked none |
+| 06 | [URL redaction](06-url-redaction/) | Block-list leaked 12/17, a "smart" allow-list 5/17, the shortest allow-list 0/17 |
 | 07 | [Native libraries](07-native-libraries/) | Two packages, two copies of FFmpeg, one "mysterious crashes" warning |
 
 ## Run
