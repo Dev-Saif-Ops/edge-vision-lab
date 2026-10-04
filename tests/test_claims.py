@@ -1,0 +1,61 @@
+"""Every headline number in the READMEs, checked. If an experiment changes, these fail first."""
+
+import importlib.util
+import sys
+from pathlib import Path
+from types import ModuleType
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load(path: str) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(Path(path).stem, ROOT / path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str((ROOT / path).parent))
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_queue_grows_to_3_5_gb_and_a_5_minute_wait() -> None:
+    m = load("01-newest-frame/newest_frame.py")
+    last = m.simulate(60)[-1]
+    assert 3.4 < last["queue_mb"] / 1000 < 3.6
+    assert 49 < last["queue_lag"] < 51
+    assert round(last["queue_frames"] / m.CONSUMER_FPS / 60) == 5
+    assert last["newest_mb"] < 1.2
+
+
+def test_smoothed_rate_stays_high_while_window_count_drops_to_zero() -> None:
+    m = load("02-rate-metrics/rate_metrics.py")
+    times, at = m.arrivals(), [5.0, 7.5]
+    assert all(v > 900 for v in m.smoothed_inverse_gap(times, at))
+    assert m.window_count(times, at) == [0.0, 0.0]
+
+
+def test_jitter_shrinks_the_recovery_spike_but_slows_full_recovery() -> None:
+    m = load("03-backoff-jitter/backoff_jitter.py")
+    exp, exp_done = m.run(m.STRATEGIES["exponential"])
+    full, full_done = m.run(m.STRATEGIES["full jitter"])
+    eq, _ = m.run(m.STRATEGIES["equal jitter"])
+    assert m.peak_after_recovery(exp) == 200
+    assert m.peak_after_recovery(full) <= 20
+    assert m.peak_after_recovery(eq) <= 20
+    assert full_done > exp_done
+
+
+def test_mutation_tool_skips_docstrings_and_scores_as_claimed() -> None:
+    m = load("05-mutation-testing/mutate.py")
+    mutated = m.mutate(m.SOURCE, "min(initial * 2**attempt, cap)", "initial * 2**attempt")
+    assert "ceiling = initial * 2**attempt\n" in mutated  # the code changed...
+    assert "min(initial * 2**attempt, cap)." in mutated  # ...and the docstring did not
+    weak = sum(not m.survives("test_weak.py", m.mutate(m.SOURCE, o, n)) for _, o, n in m.MUTANTS)
+    strong = sum(not m.survives("test_strong.py", m.mutate(m.SOURCE, o, n)) for _, o, n in m.MUTANTS)
+    assert (weak, strong) == (0, len(m.MUTANTS))
+
+
+def test_block_list_leaks_7_of_12_and_allow_list_none() -> None:
+    m = load("06-url-redaction/redaction.py")
+    assert len(m.URLS) == 12
+    assert sum("SECRET" in m.block_list(u) for u in m.URLS) == 7
+    assert sum("SECRET" in m.allow_list(u) for u in m.URLS) == 0
