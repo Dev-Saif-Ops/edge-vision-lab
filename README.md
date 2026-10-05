@@ -16,6 +16,7 @@ lesson I learned the hard way, turned into a script you can run in a few seconds
 | 05 | [Mutation testing](05-mutation-testing/) | Two test files, both 100% coverage: one caught 0/6 bugs, the other 6/6 |
 | 06 | [URL redaction](06-url-redaction/) | Block-list leaked 12/17, a "smart" allow-list 5/17, the shortest allow-list 0/17 |
 | 07 | [Native libraries](07-native-libraries/) | Two packages, two copies of FFmpeg, one "mysterious crashes" warning |
+| 08 | [Drop at the source](08-drop-at-source/) | Decoding 60 frames to keep 10 is ~10x the work of asking the camera for 10 small ones |
 
 ## Run
 

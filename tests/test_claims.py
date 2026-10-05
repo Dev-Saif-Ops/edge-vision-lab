@@ -62,3 +62,15 @@ def test_three_redactors_leak_12_5_and_0_of_17() -> None:
     assert m.leaks(m.shortest_allow_list) == []
     # the path-keeping version's leaks are exactly the five "harmless-looking path" URLs
     assert m.leaks(m.path_keeping_allow_list) == [u for u, _, _ in m.URLS[12:]]
+
+
+def test_dropping_at_the_source_is_far_cheaper_than_dropping_late() -> None:
+    m = load("08-drop-at-source/drop_at_source.py")
+    rows = m.run()
+    ms = [r[1] for r in rows]
+    assert [r[2] for r in rows] == [10, 10, 10, 10]  # the model gets the same frames every way
+    assert ms[0] > ms[1] > ms[2] > ms[3]  # decode all > grab-only > 10 fps > 10 fps small
+    assert ms[0] / ms[3] > 5  # README says ~10x; timing varies by machine, so a safe floor
+    assert abs(rows[3][3] - rows[0][3] / 4) < 1e-9  # half width and height: a quarter of the memory
+    memory, disk = m.log_cost(100)
+    assert disk > 100 * memory  # a flushed disk write per frame is orders of magnitude slower
